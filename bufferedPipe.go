@@ -140,3 +140,8 @@ func (p *bufferedPipe) SetWriteDeadline(t time.Time) {
 	p.wDeadline = t
 	p.wCond.Broadcast()
 }
+
+type bufferedPipeAddr struct{}
+
+func (bufferedPipeAddr) Network() string { return "bufferedPipe" }
+func (bufferedPipeAddr) String() string  { return "bufferedPipe" }

@@ -40,8 +40,8 @@ func (conn *pipeConn) SetDeadline(t time.Time) error {
 	return nil
 }
 
-func (conn *pipeConn) LocalAddr() net.Addr  { return nil }
-func (conn *pipeConn) RemoteAddr() net.Addr { return nil }
+func (conn *pipeConn) LocalAddr() net.Addr  { return bufferedPipeAddr{} }
+func (conn *pipeConn) RemoteAddr() net.Addr { return bufferedPipeAddr{} }
 
 // AsyncPipe is a drop-in replacement of net.Pipe, but buffered, asynchronous and safe for concurrent use.
 // Read calls will block until data becomes available by writing to the other end,
