@@ -90,5 +90,5 @@ func (d *discardConn) SetDeadline(t time.Time) error {
 	d.wDeadline = t
 	return nil
 }
-func (d *discardConn) LocalAddr() net.Addr  { return nil }
-func (d *discardConn) RemoteAddr() net.Addr { return nil }
+func (d *discardConn) LocalAddr() net.Addr  { return fakeAddr{} }
+func (d *discardConn) RemoteAddr() net.Addr { return fakeAddr{} }
