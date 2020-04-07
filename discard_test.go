@@ -102,7 +102,7 @@ func TestDiscardConn_Read(t *testing.T) {
 
 		for i := 5; i <= 105; i++ {
 			go func() {
-				_ = discard.SetReadDeadline(time.Now().Add(time.Duration(i) * time.Second))
+				_ = discard.SetDeadline(time.Now().Add(time.Duration(i) * time.Second))
 			}()
 		}
 
@@ -114,4 +114,14 @@ func TestDiscardConn_Read(t *testing.T) {
 			return
 		}
 	})
+}
+
+func TestDiscardConn_Addrs(t *testing.T) {
+	discard := Discard()
+	if discard.LocalAddr() == nil {
+		t.Error("LocalAddr shouldn't return null pointer")
+	}
+	if discard.RemoteAddr() == nil {
+		t.Error("RemoteAddr shouldn't return null pointer")
+	}
 }

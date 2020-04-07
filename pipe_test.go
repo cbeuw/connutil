@@ -10,20 +10,6 @@ import (
 	"time"
 )
 
-var lengths = []struct {
-	length int
-}{
-	{1},
-	{2},
-	{3},
-	{128},
-	{192},
-	{256},
-	{65536},
-	{1 << 20},
-	{1 << 28},
-}
-
 func TestPipeConn_Write(t *testing.T) {
 	testData := make([]byte, 128)
 	t.Run("write after close", func(t *testing.T) {
@@ -81,6 +67,23 @@ func TestPipeConn_Read(t *testing.T) {
 			t.Errorf("expecting %v, got %v", io.ErrClosedPipe, err)
 		}
 	})
+	t.Run("read block then timeout", func(t *testing.T) {
+		r, _ := AsyncPipe()
+		done := make(chan struct{})
+		go func() {
+			_, _ = r.Read(make([]byte, 1))
+			done <- struct{}{}
+		}()
+
+		_ = r.SetReadDeadline(time.Now().Add(500 * time.Millisecond))
+		select {
+		case <-done:
+			return
+		case <-time.After(1 * time.Second):
+			t.Error("Read did not unblock after deadline has passed")
+		}
+	})
+
 	t.Run("read after deadline passed", func(t *testing.T) {
 		r, _ := AsyncPipe()
 		err := r.SetReadDeadline(time.Now().Add(-1 * time.Second))
@@ -126,6 +129,20 @@ func TestPipeConn_ReadWrite(t *testing.T) {
 			t.Error(err)
 		}
 	})
+	t.Run("read write with deadline", func(t *testing.T) {
+		r, w := AsyncPipe()
+		_ = w.SetWriteDeadline(time.Now().Add(1 * time.Second))
+		_ = r.SetReadDeadline(time.Now().Add(1 * time.Second))
+		_, err := w.Write(testData)
+		if err != nil {
+			t.Error("write timed out")
+		}
+
+		_, err = r.Read(make([]byte, len(testData)))
+		if err != nil {
+			t.Error("read timed out")
+		}
+	})
 	t.Run("read write after deadline passed", func(t *testing.T) {
 		c, _ := AsyncPipe()
 		err := c.SetDeadline(time.Now().Add(-1 * time.Second))
@@ -142,6 +159,20 @@ func TestPipeConn_ReadWrite(t *testing.T) {
 			t.Errorf("expecting %v, got %v", ErrTimeout, err)
 		}
 	})
+}
+
+var lengths = []struct {
+	length int
+}{
+	{1},
+	{2},
+	{3},
+	{128},
+	{192},
+	{256},
+	{65536},
+	{1 << 20},
+	{1 << 28},
 }
 
 func TestPipeConn_concurrentPipe(t *testing.T) {
@@ -256,6 +287,16 @@ func TestAsyncPipe_Duplex(t *testing.T) {
 			t.Parallel()
 			test(dataLen)
 		})
+	}
+}
+
+func TestPipeConn_Addrs(t *testing.T) {
+	p, _ := AsyncPipe()
+	if p.LocalAddr() == nil {
+		t.Error("LocalAddr shouldn't return null pointer")
+	}
+	if p.RemoteAddr() == nil {
+		t.Error("RemoteAddr shouldn't return null pointer")
 	}
 }
 
