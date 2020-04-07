@@ -33,8 +33,8 @@ package connutil
 
 import (
 	"bytes"
+	"io"
 	"sync"
-	"syscall"
 	"time"
 )
 
@@ -63,12 +63,12 @@ func (p *bufferedPipe) Read(b []byte) (int, error) {
 
 	for {
 		if p.closed {
-			return 0, syscall.ENOTCONN
+			return 0, io.ErrClosedPipe
 		}
 		if !p.rDeadline.IsZero() {
 			d := time.Until(p.rDeadline)
 			if d <= 0 {
-				return 0, syscall.EAGAIN
+				return 0, ErrTimeout
 			}
 			time.AfterFunc(d, p.rCond.Broadcast)
 		}
@@ -90,12 +90,12 @@ func (p *bufferedPipe) Write(b []byte) (int, error) {
 
 	for {
 		if p.closed {
-			return 0, syscall.ENOTCONN
+			return 0, io.ErrClosedPipe
 		}
 		if !p.wDeadline.IsZero() {
 			d := time.Until(p.wDeadline)
 			if d <= 0 {
-				return 0, syscall.EAGAIN
+				return 0, ErrTimeout
 			}
 			time.AfterFunc(d, p.wCond.Broadcast)
 		}
