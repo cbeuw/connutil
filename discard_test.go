@@ -91,4 +91,27 @@ func TestDiscardConn_Read(t *testing.T) {
 			t.Error("Read did not unblock after deadline has passed")
 		}
 	})
+
+	t.Run("racily setting deadline", func(t *testing.T) {
+		discard := Discard()
+		done := make(chan struct{})
+		go func() {
+			_, _ = discard.Read(make([]byte, 1))
+			done <- struct{}{}
+		}()
+
+		for i := 5; i <= 105; i++ {
+			go func() {
+				_ = discard.SetReadDeadline(time.Now().Add(time.Duration(i) * time.Second))
+			}()
+		}
+
+		// here we don't want read to return earlier than time.After(500ms)
+		select {
+		case <-done:
+			t.Error("Read unblocked when deadline hasn't passed")
+		case <-time.After(500 * time.Millisecond):
+			return
+		}
+	})
 }
