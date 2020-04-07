@@ -28,7 +28,10 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-// forked from https://github.com/golang/go/blob/74d6de03fd7db2c6faa7794620a9bcf0c4f018f2/src/net/net_fake.go#L166
+/*
+Forked from https://github.com/golang/go/blob/74d6de03fd7db2c6faa7794620a9bcf0c4f018f2/src/net/net_fake.go#L166
+*/
+
 package connutil
 
 import (
