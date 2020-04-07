@@ -33,7 +33,6 @@ package connutil
 
 import (
 	"bytes"
-	"io"
 	"sync"
 	"syscall"
 	"time"
@@ -63,8 +62,8 @@ func (p *bufferedPipe) Read(b []byte) (int, error) {
 	defer p.mu.Unlock()
 
 	for {
-		if p.closed && p.buf.Len() == 0 {
-			return 0, io.EOF
+		if p.closed {
+			return 0, syscall.ENOTCONN
 		}
 		if !p.rDeadline.IsZero() {
 			d := time.Until(p.rDeadline)
