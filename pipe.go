@@ -30,7 +30,7 @@ func (conn *pipeConn) SetReadDeadline(t time.Time) error {
 }
 
 func (conn *pipeConn) SetWriteDeadline(t time.Time) error {
-	conn.readEnd.SetWriteDeadline(t)
+	conn.writeEnd.SetWriteDeadline(t)
 	return nil
 }
 
