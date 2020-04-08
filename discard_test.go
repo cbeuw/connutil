@@ -95,9 +95,9 @@ func TestDiscardConn_Read(t *testing.T) {
 		}()
 
 		for i := 5; i <= 105; i++ {
-			go func() {
-				_ = discard.SetDeadline(time.Now().Add(time.Duration(i) * time.Second))
-			}()
+			go func(d time.Duration) {
+				_ = discard.SetDeadline(time.Now().Add(d))
+			}(time.Duration(i) * time.Second)
 		}
 
 		// here we don't want read to return earlier than time.After(500ms)
