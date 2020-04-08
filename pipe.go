@@ -47,17 +47,7 @@ func (conn *pipeConn) RemoteAddr() net.Addr { return fakeAddr{} }
 // Read calls will block until data becomes available by writing to the other end,
 // Write calls on either end will never block, but it will panic if the buffer becomes too large for the memory.
 func AsyncPipe() (net.Conn, net.Conn) {
-	LtoR := newBufferedPipe(0)
-	RtoL := newBufferedPipe(0)
-	a := &pipeConn{
-		writeEnd: LtoR,
-		readEnd:  RtoL,
-	}
-	b := &pipeConn{
-		writeEnd: RtoL,
-		readEnd:  LtoR,
-	}
-	return a, b
+	return LimitedAsyncPipe(0)
 }
 
 // LimitedAsyncPipe is similar to AsyncPipe, but Write calls will block if the buffer size is larger than
