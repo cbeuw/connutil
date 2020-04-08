@@ -298,6 +298,8 @@ func TestPipeConn_Addrs(t *testing.T) {
 	if p.RemoteAddr() == nil {
 		t.Error("RemoteAddr shouldn't return null pointer")
 	}
+	p.LocalAddr().Network()
+	p.LocalAddr().String()
 }
 
 func TestLimitedAsyncPipe(t *testing.T) {
