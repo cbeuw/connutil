@@ -3,6 +3,25 @@ Utility net.Conns for testing and more
 ## Usage
 `$ go get github.com/cbeuw/connutil`
 
+See the full documentation here: https://pkg.go.dev/github.com/cbeuw/connutil?tab=doc
+
+`AsyncPipe()` is a function that returns two ends of an in-memory pipe, with both ends implementing `net.Conn`. 
+They are fully duplex and behave similar to two ends of a TCP connection. It is a drop-in replacement for `net.Pipe()`, but is asynchronous and buffered.
+
+```go
+oneEnd, otherEnd := AsyncPipe()
+oneEnd.Write([]byte("hello")) // will not block
+
+receivingBuffer := make([]byte, 5)
+io.ReadFull(otherEnd, receivingBuffer)
+// string(receivingBuffer) == "hello"
+
+go func(){
+    otherEnd.Write([]byte("world"))
+}()
+oneEnd.Read(receivingBuffer) // will block until there is something to read
+```
+## Examples
 To test a tls implementation, for instance
 ```go
 package test
@@ -15,10 +34,6 @@ import (
 )
 
 func TestTLS(t *testing.T){
-    // AsyncPipe() works just like net.Pipe(), but is asynchronous and behaves more
-    // like two ends of a TCP connection.
-    // Read calls will block until data becomes available, and Write calls
-    // are buffered.
     clientEnd, serverEnd := connutil.AsyncPipe()
 
     clientConn := tls.Client(clientEnd, fooClientConfig)
@@ -40,6 +55,8 @@ Or to test the behaviour of an http server
 package test
 
 import(
+    "crypto/rand"
+    "io"
     "net/http"
     "testing"
 
@@ -61,5 +78,7 @@ func TestHttp(t *testing.T){
     
     // Do stuff with the client conn...
     clientConn.Write([]byte("GET ..."))
+    // Writing junk to the server
+    io.Copy(clientConn, rand.Reader)
 }
 ```
