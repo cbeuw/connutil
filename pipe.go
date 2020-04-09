@@ -43,15 +43,17 @@ func (conn *pipeConn) SetDeadline(t time.Time) error {
 func (conn *pipeConn) LocalAddr() net.Addr  { return fakeAddr{} }
 func (conn *pipeConn) RemoteAddr() net.Addr { return fakeAddr{} }
 
-// AsyncPipe is a drop-in replacement of net.Pipe, but buffered, asynchronous and safe for concurrent use.
+// AsyncPipe is an in-memory, full-duplex pipe with both ends implementing net.Conn interface.
+//
+// It is a drop-in replacement of net.Pipe, but buffered, asynchronous and safe for concurrent use.
 // Read calls will block until data becomes available by writing to the other end,
 // Write calls on either end will never block, but it will panic if the buffer becomes too large for the memory.
 func AsyncPipe() (net.Conn, net.Conn) {
 	return LimitedAsyncPipe(0)
 }
 
-// LimitedAsyncPipe is similar to AsyncPipe, but Write calls will block if the buffer size is larger than
-// bufferSizeLimit.
+// LimitedAsyncPipe is similar to AsyncPipe, but Write calls will block if the buffer size grows larger than
+// bufferSizeLimit. Consuming data through Read calls on the other end will unblock the Write call.
 func LimitedAsyncPipe(bufferSizeLimit int) (net.Conn, net.Conn) {
 	LtoR := newBufferedPipe(bufferSizeLimit)
 	RtoL := newBufferedPipe(bufferSizeLimit)
