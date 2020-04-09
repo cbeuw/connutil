@@ -21,8 +21,8 @@ func TestTLS(t *testing.T){
     // are buffered.
     clientEnd, serverEnd := connutil.AsyncPipe()
 
-    clientConn := tls.Client(clientEnd, clientConfig)
-    serverConn := tls.Server(serverEnd, serverConfig)
+    clientConn := tls.Client(clientEnd, fooClientConfig)
+    serverConn := tls.Server(serverEnd, fooServerConfig)
 
     // do things with clientConn and serverConn...
     // e.g.
@@ -32,5 +32,34 @@ func TestTLS(t *testing.T){
     if err != nil {
         t.Error(err)
     }
+}
+```
+
+Or to test the behaviour of an http server
+```go
+package test
+
+import(
+    "net/http"
+    "testing"
+
+    "github.com/cbeuw/connutil"
+)
+
+func TestHttp(t *testing.T){
+    // DialerListener returns a pair of Dialer and net.Listener
+    dialer, listener := connutil.DialerListener(128)
+
+    go http.Serve(listener, fooHandler)
+    
+    // Here you get one end of an async pipe. http.Serve will get the other end from
+    // listener.Accept() 
+    clientConn, err := dialer.Dial("","")
+    if err != nil {
+        // handle error
+    }
+    
+    // Do stuff with the client conn...
+    clientConn.Write([]byte("GET ..."))
 }
 ```
