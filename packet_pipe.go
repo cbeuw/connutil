@@ -68,10 +68,10 @@ func (conn *PacketPipe) SetDeadline(t time.Time) error {
 	return nil
 }
 
-// LocalAddr implements net.Conn and net.PacketConn LocalAddr method.
+// LocalAddr implements net.Conn and net.PacketConn LocalAddr method. It returns a meaningless mock address.
 func (conn *PacketPipe) LocalAddr() net.Addr { return fakeAddr{} }
 
-// RemoteAddr implements net.Conn and net.PacketConn RemoteAddr method.
+// RemoteAddr implements net.Conn and net.PacketConn RemoteAddr method. It returns a meaningless mock address.
 func (conn *PacketPipe) RemoteAddr() net.Addr { return fakeAddr{} }
 
 // AsyncPipe creates an in-memory, full-duplex, packet-oriented pipe with both ends implementing net.Conn and net.PacketConn
