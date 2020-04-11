@@ -10,25 +10,15 @@ type pipeConn struct {
 	readEnd  *bufferedPipe
 }
 
-func (conn *pipeConn) Read(b []byte) (int, error) {
-	return conn.readEnd.Read(b)
-}
-
-func (conn *pipeConn) Write(b []byte) (int, error) {
-	return conn.writeEnd.Write(b)
-}
-
+func (conn *pipeConn) Read(b []byte) (int, error)  { return conn.readEnd.Read(b) }
+func (conn *pipeConn) Write(b []byte) (int, error) { return conn.writeEnd.Write(b) }
 func (conn *pipeConn) Close() error {
 	conn.writeEnd.Close()
 	conn.readEnd.Close()
 	return nil
 }
 
-func (conn *pipeConn) SetReadDeadline(t time.Time) error {
-	conn.readEnd.SetReadDeadline(t)
-	return nil
-}
-
+func (conn *pipeConn) SetReadDeadline(t time.Time) error { conn.readEnd.SetReadDeadline(t); return nil }
 func (conn *pipeConn) SetWriteDeadline(t time.Time) error {
 	conn.writeEnd.SetWriteDeadline(t)
 	return nil

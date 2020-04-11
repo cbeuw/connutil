@@ -309,11 +309,11 @@ func TestLimitedAsyncPipe(t *testing.T) {
 		w, r := LimitedAsyncPipe(1)
 		go func() {
 			contentLen := len(testData)
-			remaining := contentLen
-			for remaining != 0 {
-				toWrite := rand.Intn(remaining) + 1
-				_, _ = w.Write(testData[contentLen-remaining : contentLen-remaining+toWrite])
-				remaining -= toWrite
+			var n int
+			for n < contentLen {
+				toWrite := rand.Intn(contentLen-n) + 1
+				written, _ := w.Write(testData[n:min(n+toWrite, contentLen)])
+				n += written
 			}
 		}()
 		readBuf := make([]byte, len(testData))
