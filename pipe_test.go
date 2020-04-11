@@ -330,4 +330,20 @@ func TestLimitedAsyncPipe(t *testing.T) {
 			t.Error("data not correctly read")
 		}
 	})
+	t.Run("write block", func(t *testing.T) {
+		w, _ := LimitedAsyncPipe(1)
+		_, _ = w.Write(make([]byte, 2))
+		unblocked := make(chan struct{})
+		go func() {
+			_, _ = w.Write(make([]byte, 128))
+			unblocked <- struct{}{}
+		}()
+
+		select {
+		case <-unblocked:
+			t.Error("write shouldn't have unblocked")
+		case <-time.After(500 * time.Millisecond):
+			return
+		}
+	})
 }

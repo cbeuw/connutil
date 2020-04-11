@@ -60,9 +60,11 @@ func TestPipeDialer_DialContext(t *testing.T) {
 		t.Errorf("expcting timeout, got %v", ctx.Err())
 	}
 
-	_, err = d.DialContext(ctx, "udp", "")
-	if err != ctx.Err() {
-		t.Errorf("expcting timeout, got %v", ctx.Err())
+	_, _ = d.Dial("udp", "")
+	ctx2, _ := context.WithTimeout(context.Background(), 200*time.Millisecond)
+	_, err = d.DialContext(ctx2, "udp", "")
+	if err != ctx2.Err() {
+		t.Errorf("expcting timeout, got %v", ctx2.Err())
 	}
 
 	b, err := l.Accept()
