@@ -27,7 +27,7 @@ type bufferedPacketPipe struct {
 	wDeadline time.Time
 }
 
-func (p *bufferedPacketPipe) ReadFrom(b []byte) (int, error) {
+func (p *bufferedPacketPipe) Read(b []byte) (int, error) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
@@ -59,7 +59,7 @@ func (p *bufferedPacketPipe) ReadFrom(b []byte) (int, error) {
 	return n, nil
 }
 
-func (p *bufferedPacketPipe) WriteTo(b []byte) (int, error) {
+func (p *bufferedPacketPipe) Write(b []byte) (int, error) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
