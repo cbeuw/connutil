@@ -116,6 +116,7 @@ func TestPipeConn_Read(t *testing.T) {
 
 func TestPipeConn_ReadWrite(t *testing.T) {
 	testData := make([]byte, 128)
+	rand.Read(testData)
 	t.Run("simple read write", func(t *testing.T) {
 		r, w := AsyncPipe()
 		_, err := w.Write(testData)
@@ -127,6 +128,9 @@ func TestPipeConn_ReadWrite(t *testing.T) {
 		_, err = io.ReadFull(r, receiveBuf)
 		if err != nil {
 			t.Error(err)
+		}
+		if !bytes.Equal(testData, receiveBuf) {
+			t.Error("read incorrect data")
 		}
 	})
 	t.Run("read write with deadline", func(t *testing.T) {
