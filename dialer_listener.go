@@ -20,40 +20,56 @@ type PipeDialer struct {
 	peer            *PipeListener
 }
 
-// Dial returns one end of the pipe, with the other end to be obtained from Accept.
-// network and address arguments don't do anything
+// Dial returns one end of the pipe.
+// A *StreamPipe (implementing net.Conn) is returned when the network argument is empty, or "tcp", "tcp4" or "tcp6";
+// a *PacketPipe (implementing both net.Conn and net.PacketConn) is returned when the network argument is "udp", "udp4",
+// "udp6", "ip", "ip4", "ip6", "unix", "unixgram" or "unixpacket".
+//
+// address argument doesn't do anything
 func (d *PipeDialer) Dial(network, address string) (net.Conn, error) {
 	return d.DialContext(context.Background(), network, address)
 }
 
-// DialContext returns one end of the pipe, with the other end to be obtained from Accept.
-//
-// network and address don't do anything. It can timeout or be cancelled using ctx.
+// DialContext acts like Dial but it may timeout or be cancelled using ctx.
 func (d *PipeDialer) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
 	if atomic.LoadUint32(&d.peer.closed) == 1 {
 		return nil, ErrListenerClosed
 	}
-	a, b := LimitedAsyncPipe(d.BufferSizeLimit)
-	select {
-	case <-ctx.Done():
-		return nil, ctx.Err()
-	case d.peer.incomingConn <- b:
-		return a, nil
+
+	switch network {
+	case "udp", "udp4", "udp6", "ip", "ip4", "ip6", "unix", "unixgram", "unixpacket":
+		a, b := LimitedAsyncPacketPipe(d.BufferSizeLimit)
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		case d.peer.incomingPacketConn <- b:
+			return a, nil
+		}
+	default:
+		a, b := LimitedAsyncPipe(d.BufferSizeLimit)
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		case d.peer.incomingStreamConn <- b:
+			return a, nil
+		}
 	}
 }
 
 // PipeListener is a net.Listener that accepts connections dialed from the corresponding PipeDialer
 type PipeListener struct {
-	incomingConn chan net.Conn
-	closed       uint32
+	incomingStreamConn chan net.Conn
+	incomingPacketConn chan net.PacketConn
+	closed             uint32
 }
 
-// Accept implements Listener.Accept(). It returns one end of the pipe, with the other end obtained from Dial
+// Accept implements Listener.Accept(). It returns one end of a StreamPipe, with the other end obtained through the
+// corresponding PipeDialer.Dial with an empty or stream-oriented network argument.
 func (l *PipeListener) Accept() (net.Conn, error) {
 	if atomic.LoadUint32(&l.closed) == 1 {
 		return nil, ErrListenerClosed
 	} else {
-		return <-l.incomingConn, nil
+		return <-l.incomingStreamConn, nil
 	}
 }
 
@@ -68,16 +84,33 @@ func (l *PipeListener) Addr() net.Addr {
 	return fakeAddr{}
 }
 
-// DialerListener returns a pair of PipeDialer and PipeListener. By calling
-// PipeDialer.Dial and then PipeListener.Accept, you can get two ends of an asynchronous pipe,
-// as if obtained through AsyncPipe()
+// ListenPacket has the same function signature as net.ListenPacket function, meaning it's a drop-in replacement.
+// It returns one end of a PacketPipe, with the other end through the corresponding PipeDialer.Dial using a
+// packet-oriented network argument.
 //
-// backlog specifies the amount of Dial calls you can make without making corresponding Accept calls on listener before
-// Dial calls start blocking
-func DialerListener(backlog int) (Dialer, net.Listener) {
+// network and address arguments don't do anything
+func (l *PipeListener) ListenPacket(network, address string) (net.PacketConn, error) {
+	if atomic.LoadUint32(&l.closed) == 1 {
+		return nil, ErrListenerClosed
+	} else {
+		return <-l.incomingPacketConn, nil
+	}
+}
+
+// DialerListener returns a pair of PipeDialer and PipeListener.
+// To obtain a stream-oriented pipe, call PipeDialer.Dial with an empty or stream-oriented network argument and then
+// call PipeListener.Accept.
+//
+// Similarly, to obtain a packet-oriented pipe, call PipeDialer.Dial with a packet-oriented network argument (e.g. "udp")
+// and then call PipeListener.ListenPacket, as if calling ListenPacket function from the net package.
+//
+// backlog specifies the amount of Dial calls you can make without making corresponding Accept or ListenPacket calls on
+// listener before Dial calls start blocking.
+func DialerListener(backlog int) (*PipeDialer, *PipeListener) {
 	l := &PipeListener{
-		incomingConn: make(chan net.Conn, backlog),
-		closed:       0,
+		incomingStreamConn: make(chan net.Conn, backlog),
+		incomingPacketConn: make(chan net.PacketConn, backlog),
+		closed:             0,
 	}
 	d := &PipeDialer{peer: l}
 	return d, l
