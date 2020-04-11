@@ -15,7 +15,9 @@ type Dialer interface {
 
 // PipeDialer implements the Dialer interface, which means it has the same method signatures as net.Dialer
 type PipeDialer struct {
-	peer *PipeListener
+	// PipeBufferSize specifies the limit on the underlying buffer size. Default (0) means unlimited.
+	BufferSizeLimit int
+	peer            *PipeListener
 }
 
 // Dial returns one end of the pipe, with the other end to be obtained from Accept.
@@ -31,7 +33,7 @@ func (d *PipeDialer) DialContext(ctx context.Context, network, address string) (
 	if atomic.LoadUint32(&d.peer.closed) == 1 {
 		return nil, ErrListenerClosed
 	}
-	a, b := AsyncPipe()
+	a, b := LimitedAsyncPipe(d.BufferSizeLimit)
 	select {
 	case <-ctx.Done():
 		return nil, ctx.Err()
