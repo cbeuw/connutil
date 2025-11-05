@@ -65,9 +65,6 @@ func (p *bufferedPipe) Read(b []byte) (int, error) {
 	defer p.mu.Unlock()
 
 	for {
-		if p.closed {
-			return 0, io.ErrClosedPipe
-		}
 		if !p.rDeadline.IsZero() {
 			d := time.Until(p.rDeadline)
 			if d <= 0 {
@@ -75,15 +72,18 @@ func (p *bufferedPipe) Read(b []byte) (int, error) {
 			}
 			time.AfterFunc(d, p.rCond.Broadcast)
 		}
-		if p.buf.Len() > 0 {
+		if p.closed || p.buf.Len() > 0 {
 			break
 		}
 		p.rCond.Wait()
 	}
 
 	n, _ := p.buf.Read(b)
-	// err is either io.EOF or nil. Since the buffer is definitely not empty, err is nil
 	p.wCond.Broadcast()
+	if p.closed {
+		return n, io.ErrClosedPipe
+	}
+	// err is either io.EOF or nil. Since the buffer is definitely not empty, err is nil
 	return n, nil
 }
 

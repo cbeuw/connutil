@@ -32,9 +32,6 @@ func (p *bufferedPacketPipe) Read(b []byte) (int, error) {
 	defer p.mu.Unlock()
 
 	for {
-		if p.closed {
-			return 0, io.ErrClosedPipe
-		}
 		if !p.rDeadline.IsZero() {
 			d := time.Until(p.rDeadline)
 			if d <= 0 {
@@ -45,6 +42,9 @@ func (p *bufferedPacketPipe) Read(b []byte) (int, error) {
 		if len(p.pLens) > 0 {
 			break
 		}
+		if p.closed {
+			return 0, io.ErrClosedPipe
+		}
 		p.rCond.Wait()
 	}
 
@@ -54,8 +54,11 @@ func (p *bufferedPacketPipe) Read(b []byte) (int, error) {
 	}
 	n, _ := p.buf.Read(b[:curLen])
 	p.pLens = p.pLens[1:]
-	// err is either io.EOF or nil. Since the buffer is definitely not empty, err is nil
 	p.wCond.Broadcast()
+	if p.closed {
+		return n, io.ErrClosedPipe
+	}
+	// err is either io.EOF or nil. Since the buffer is definitely not empty, err is nil
 	return n, nil
 }
 
