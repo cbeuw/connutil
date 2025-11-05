@@ -1,3 +1,3 @@
-module github.com/cbeuw/connutil/v2
+module github.com/cbeuw/connutil
 
 go 1.25
