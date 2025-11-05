@@ -39,8 +39,11 @@ func (p *bufferedPacketPipe) Read(b []byte) (int, error) {
 			}
 			time.AfterFunc(d, p.rCond.Broadcast)
 		}
-		if p.closed || len(p.pLens) > 0 {
+		if len(p.pLens) > 0 {
 			break
+		}
+		if p.closed {
+			return 0, io.ErrClosedPipe
 		}
 		p.rCond.Wait()
 	}
