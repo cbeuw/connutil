@@ -81,7 +81,7 @@ func (p *bufferedPipe) Read(b []byte) (int, error) {
 	n, _ := p.buf.Read(b)
 	p.wCond.Broadcast()
 	if p.closed {
-		return n, ErrClosedPipe
+		return n, io.ErrClosedPipe
 	}
 	// err is either io.EOF or nil. Since the buffer is definitely not empty, err is nil
 	return n, nil

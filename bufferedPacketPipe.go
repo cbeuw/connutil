@@ -53,7 +53,7 @@ func (p *bufferedPacketPipe) Read(b []byte) (int, error) {
 	p.pLens = p.pLens[1:]
 	p.wCond.Broadcast()
 	if p.closed {
-		return n, ErrClosedPipe
+		return n, io.ErrClosedPipe
 	}
 	// err is either io.EOF or nil. Since the buffer is definitely not empty, err is nil
 	return n, nil
